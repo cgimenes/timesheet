@@ -4,49 +4,73 @@ module Types where
 
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
-import Data.Time (LocalTime)
+import Data.Time (LocalTime, NominalDiffTime)
 
-data Priority = Low | Normal | High deriving (Generic, Show)
-instance ToJSON Priority
-instance FromJSON Priority
+type PunchDate = LocalTime
+type Duration = NominalDiffTime
+type AllowanceReason = String
+type YearNumber = Int
+type MonthNumber = Int
+type AllowanceIndex = Int
 
-type ItemIndex = Int
-type ItemTitle = String
-type ItemDescription = Maybe String
-type ItemPriority = Maybe Priority
-type ItemDueBy = Maybe LocalTime
+data Database = Database [Year] deriving (Generic, Show)
+instance ToJSON Database
+instance FromJSON Database
 
-data ToDoList = ToDoList [Item] deriving (Generic, Show)
-instance ToJSON ToDoList
-instance FromJSON ToDoList
+data Year = Year YearNumber [Month] deriving (Generic, Show)
+instance ToJSON Year
+instance FromJSON Year
 
-data Item = Item
-    { title :: ItemTitle
-    , description :: ItemDescription
-    , priority :: ItemPriority
-    , dueBy :: ItemDueBy
+data Period = Period LocalTime LocalTime deriving (Generic, Show)
+instance ToJSON Period
+instance FromJSON Period
+
+data Allowance = DurationAllowance 
+    { duration :: Duration
+    , reason :: AllowanceReason
+    } | PeriodAllowance 
+    { period :: Period
+    , reason :: AllowanceReason
     } deriving (Generic, Show)
-instance ToJSON Item
-instance FromJSON Item
+instance ToJSON Allowance
+instance FromJSON Allowance
 
-data ItemUpdate = ItemUpdate
-    { titleUpdate :: Maybe ItemTitle
-    , descriptionUpdate :: Maybe ItemDescription
-    , priorityUpdate :: Maybe ItemPriority
-    , dueByUpdate :: Maybe ItemDueBy
+data Date = Date
+    { punchs :: [PunchDate]
+    , worked :: Duration
+    , left :: Duration
+    , balance :: Duration
+    } deriving (Generic, Show)
+instance ToJSON Date
+instance FromJSON Date
+
+data Month = Month
+    { monthNumber :: MonthNumber
+    , dates :: [Date]
+    , allowances :: [Allowance]
+    , monthBalance :: Duration
+    , totalBalance :: Duration
+    } deriving (Generic, Show)
+instance ToJSON Month
+instance FromJSON Month
+
+data AllowanceUpdate = DurationAllowanceUpdate
+    { durationUpdate :: Maybe Duration
+    , reasonUpdate :: Maybe AllowanceReason
+    } | PeriodAllowanceUpdate
+    { periodUpdate :: Maybe Period
+    , reasonUpdate :: Maybe AllowanceReason
     } deriving Show
 
-data Options = Options
-    FilePath
-    Command
-    deriving Show
+data Options = Options FilePath Command deriving Show
 
 data Command = 
-    Info 
+    Info
     | Init
-    | List
-    | Add Item
-    | View ItemIndex
-    | Update ItemIndex ItemUpdate
-    | Remove ItemIndex
+    | GetMonth Year MonthNumber 
+    | Punch PunchDate
+    | DeletePunch PunchDate
+    | CreateAllowance Allowance
+    | UpdateAllowance AllowanceIndex AllowanceUpdate
+    | DeleteAllowance AllowanceIndex 
     deriving Show
