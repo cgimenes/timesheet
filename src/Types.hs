@@ -4,20 +4,33 @@ module Types where
 
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
-import Data.Time (LocalTime, NominalDiffTime)
+import Data.Time (LocalTime, NominalDiffTime, TimeOfDay)
+import Data.Map (Map)
+import Data.List (intercalate)
 
-type PunchDate = LocalTime
-type Duration = NominalDiffTime
+type Duration = TimeOfDay
+type PunchHour = Int
+type PunchMinute = Int
 type AllowanceReason = String
 type YearNumber = Int
 type MonthNumber = Int
+type DayNumber = Int
 type AllowanceIndex = Int
+type YearMonths = Map MonthNumber Month
+type Years = Map YearNumber Year
+type PunchDate = LocalTime
+type MonthDays = Map DayNumber Day
+type PunchTime = TimeOfDay
 
-data Database = Database [Year] deriving (Generic, Show)
-instance ToJSON Database
-instance FromJSON Database
+data Timesheet = Timesheet 
+    { years :: Years
+    } deriving (Generic, Show)
+instance ToJSON Timesheet
+instance FromJSON Timesheet
 
-data Year = Year YearNumber [Month] deriving (Generic, Show)
+data Year = Year 
+    { months :: YearMonths
+    } deriving (Generic, Show)
 instance ToJSON Year
 instance FromJSON Year
 
@@ -35,21 +48,18 @@ data Allowance = DurationAllowance
 instance ToJSON Allowance
 instance FromJSON Allowance
 
-data Date = Date
-    { punchs :: [PunchDate]
-    , worked :: Duration
-    , left :: Duration
-    , balance :: Duration
-    } deriving (Generic, Show)
-instance ToJSON Date
-instance FromJSON Date
+    -- , allowance :: Maybe Allowance
+data Day = Day
+    { punches :: [PunchTime]
+    } deriving (Generic)
+instance ToJSON Day
+instance FromJSON Day
+instance Show Day where
+    show d = "Punches: " ++ intercalate "  " (map show $ punches d)
 
 data Month = Month
-    { monthNumber :: MonthNumber
-    , dates :: [Date]
+    { days :: MonthDays
     , allowances :: [Allowance]
-    , monthBalance :: Duration
-    , totalBalance :: Duration
     } deriving (Generic, Show)
 instance ToJSON Month
 instance FromJSON Month
@@ -67,7 +77,7 @@ data Options = Options FilePath Command deriving Show
 data Command = 
     Info
     | Init
-    | GetMonth Year MonthNumber 
+    | GetMonth YearNumber MonthNumber 
     | Punch PunchDate
     | DeletePunch PunchDate
     | CreateAllowance Allowance

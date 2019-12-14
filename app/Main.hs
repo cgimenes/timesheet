@@ -16,18 +16,15 @@ main = do
 
 run :: FilePath -> Command -> IO ()
 run dataPath Info = showInfo dataPath
-run dataPath Init = initDatabase dataPath
+run dataPath Init = initTimesheet dataPath
 run dataPath (Punch punchDate) = punch dataPath punchDate
--- run dataPath List = viewItems dataPath
+run dataPath (DeletePunch punchDate) = deletePunch dataPath punchDate
+run dataPath (GetMonth year month) = showMonth dataPath year month
+
 -- run dataPath (View idx) = viewItem dataPath idx
 -- run dataPath (Update idx itemUpdate) = putStrLn $ "Update: idx=" ++ show idx ++ " itemUpdate=" ++ show itemUpdate
 -- run dataPath (Remove idx) = removeItem dataPath idx
 
--- Info
--- | Init
--- | GetMonth Year MonthNumber 
--- | Punch DatePunch
--- | DeletePunch DatePunch
 -- | CreateAllowance Allowance
 -- | UpdateAllowance AllowanceIndex AllowanceUpdate
 -- | DeleteAllowance AllowanceIndex 

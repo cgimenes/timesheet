@@ -10,11 +10,14 @@ infoParser = pure Info
 initParser :: Parser Command
 initParser = pure Init
 
--- listParser :: Parser Command
--- listParser = pure List
+getMonthParser :: Parser Command
+getMonthParser = GetMonth <$> yearNumberParser <*> monthNumberParser
 
 punchParser :: Parser Command
 punchParser = Punch <$> punchDateParser
+
+deletePunchParser :: Parser Command
+deletePunchParser = DeletePunch <$> punchDateParser
 
 -- addItemParser :: Parser Item
 -- addItemParser = Item
@@ -54,16 +57,13 @@ punchParser = Punch <$> punchDateParser
 --     Just <$> itemDueByValueParser
 --     <|> flag' Nothing (long "clear-due-by")    
 
--- removeParser :: Parser Command
--- removeParser = Remove <$> itemIndexParser
-
 commandParser:: Parser Command
 commandParser = subparser $ mconcat
     [ command "info" (info infoParser (progDesc "Show info"))
     , command "init" (info initParser (progDesc "Initialize database"))
-    -- , command "getMonth" (info getMonthParser (progDesc "Get month"))
+    , command "get-month" (info getMonthParser (progDesc "Get month"))
     , command "punch" (info punchParser (progDesc "Add punch"))
-    -- , command "deletePunch" (info deletePunchParser (progDesc "Delete punch"))
+    , command "delete-punch" (info deletePunchParser (progDesc "Delete punch"))
     -- , command "createAllowance" (info createAllowanceParser (progDesc "Create allowance"))
     -- , command "updateAllowance" (info updateAllowanceParser (progDesc "Update allowance"))
     -- , command "deleteAllowance" (info deleteAllowanceParser (progDesc "Delete allowance"))
@@ -78,7 +78,7 @@ dataPathParser :: Parser FilePath
 dataPathParser = strOption $
     value defaultDataPath
     <> long "data-path"
-    <> short 'p'
+    <> short 'd'
     <> metavar "DATAPATH"
     <> help ("path to data file (default " ++ defaultDataPath ++ ")")
     where 
@@ -130,10 +130,24 @@ dataPathParser = strOption $
 --         parseDateTimeMaybe = parseTimeM False defaultTimeLocale dateTimeFormat
 --         dateTimeFormat = "%Y/%m/%d %H:%M:%S"
 
+yearNumberParser :: Parser YearNumber
+yearNumberParser = option auto $
+    long "year"
+    <> short 'y'
+    <> metavar "YEAR"
+    <> help "year"
+
+monthNumberParser :: Parser MonthNumber
+monthNumberParser = option auto $
+    long "month"
+    <> short 'm'
+    <> metavar "MONTH"
+    <> help "month"
+
 punchDateParser :: Parser LocalTime
 punchDateParser = option readDateTime $
     long "punch-date"
-    <> short 'd'
+    <> short 'p'
     <> metavar "PUNCHDATE"
     <> help "punch-date date/time"
     where
@@ -142,4 +156,4 @@ punchDateParser = option readDateTime $
                 (Just dateTime) -> Right dateTime
                 Nothing -> Left $ "Date/time string must be in " ++ dateTimeFormat ++ " format"
         parseDateTimeMaybe = parseTimeM False defaultTimeLocale dateTimeFormat
-        dateTimeFormat = "%Y/%m/%d %H:%M"
+        dateTimeFormat = "%Y-%m-%d %H:%M"
