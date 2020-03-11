@@ -86,9 +86,9 @@
 
 (defn month-merger
   "TODO"
-  [a b]
-  {:days (merge (:days a) (:days b))
-   :balance (time/plus (:balance a) (:balance b))})
+  [& months]
+  {:days (reduce merge (reverse (map :days months)))
+   :balance (reduce time/plus (map :balance months))})
   
 (defn complete-month-days
   "TODO"
@@ -99,18 +99,30 @@
                              (time/iterate time/plus date (time/days 1)))]
              (map (fn [x] {(keyword (str x)) {:punches []}}) month-days))))
 
+(defn months-contains-date
+  [months date]
+  (let [month-number (month-format date)
+        day-number (time/as date :day-of-month)]
+    (and 
+     (contains? months month-number) 
+     (contains? (:days (get months month-number)) day-number))))
+
 (defn timesheet-reducer
   "TODO"
-  [{total-balance :balance months :months} [k {punches :punches}]]
-  (let [date (time/local-date (name k))
-        {day-balance :balance :as day} (reduce-day date punches)
-        {month-balance :balance :as month} {:days (sorted-map (time/as date :day-of-month) day)
-                                            :balance day-balance}]
-    {:balance (time/plus total-balance month-balance)
-     :months (assoc-merge months
-                          month-merger
-                          (month-format date)
-                          month)}))
+  [{total-balance :balance months :months :as timesheet} [k {punches :punches}]]
+  (let [date (time/local-date (name k))] 
+    (if (months-contains-date months date)
+      timesheet
+      (let [{day-balance :balance :as day} (reduce-day date punches)
+            month-number (month-format date)
+            day-number (time/as date :day-of-month)
+            {month-balance :balance :as month} {:days (sorted-map day-number day)
+                                                :balance day-balance}]
+        {:balance (time/plus total-balance month-balance)
+         :months (assoc-merge months
+                              month-merger
+                              month-number
+                              month)}))))
 
 (defn reduce-timesheet
   "TODO"
@@ -128,10 +140,10 @@
                                              :email email}))
 
 ; TODO
-; * Fix month balance
 ; * Possible departure
 ; * Allowances
 ; * Hide month
+; * Auth
 
 (defn get-user
   "TODO"
