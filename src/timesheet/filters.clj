@@ -22,3 +22,7 @@
 (def time-format
   "TODO"
   (partial time/format "HH:mm"))
+
+(def date-format
+  "TODO"
+  (partial time/format "yyyy-MM-dd"))

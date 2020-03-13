@@ -9,12 +9,14 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
     <style>
-        .form-inline .input-group input {
-            width: 75px;
-        }
-
         .form-inline .input-group {
             width: auto;
+        }
+        .punch .badge {
+          display: none;
+        }
+        .punch:hover > .badge {
+          display: inline-block;
         }
     </style>
 
@@ -33,29 +35,17 @@
                 </li>
             </ul>
 
-<!-- 
-            <form class="form-inline">
-                <label class="sr-only" for="day">Day</label>
+            <form class="form-inline" method="POST">
+                <label class="sr-only" for="datetime">Date/Time</label>
                 <div class="input-group mb-2 mr-2">
-                  <div class="input-group-prepend">
-                    <div class="input-group-text">Day</div>
-                  </div>
-                  <input type="text" class="form-control" id="day" placeholder="Day">
+                  <input type="datetime-local" class="form-control" id="datetime" placeholder="Date/Time" name="datetime">
                 </div>
               
-                <label class="sr-only" for="time">Time</label>
-                <div class="input-group mb-2 mr-2">
-                  <div class="input-group-prepend">
-                    <div class="input-group-text">Time</div>
-                  </div>
-                  <input type="text" class="form-control" id="time" placeholder="Time">
-                </div>
-              
-                <button type="submit" class="btn btn-outline-primary mb-2">
+                <button type="submit" class="btn btn-primary mb-2">
                     <i class="fa fa-plus"></i>
                     <span>Add</span>
                 </button>
-            </form> -->
+            </form>
 
             <div class="d-flex justify-content-end align-items-center">
                 <!-- logged -->
@@ -108,9 +98,14 @@
                     </thead>
                     <tbody>
                         {%for day, day-data in month-data.days%} 
-                        <tr class="{%if day-data.review%}table-warning{%endif%}{%if day-data.not-calculated%}table-secondary{%endif%}" >
+                        <tr class="punch {%if day-data.review%}table-warning{%endif%}{%if day-data.not-calculated%}table-secondary{%endif%}" >
                             <td>{{day}}</td>
-                            <td>{%for punch in day-data.punches%} {{punch}} {%endfor%}</td>
+                            <td>
+                              {%for punch in day-data.punches%}
+                              <span class="punch">
+                                {{punch}} <a href="/timesheet/remove?datetime={{month}}-{{day}}T{{punch}}" class="badge badge-pill badge-danger">X</a>
+                              </span>{%endfor%}
+                            </td>
                             <td>{{day-data.worked|dur-str}}</td>
                             <td>{{day-data.left|dur-str}}</td>
                             <td>{{day-data.balance|dur-str}}</td>
@@ -137,14 +132,20 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 
     <script>
-        var today = new Date();
-        var day = String(today.getDate()).padStart(2, '0');
-        var hours = String(today.getHours()).padStart(2, '0');
-        var minutes = String(today.getMinutes()).padStart(2, '0');
-        var time = hours + ":" + minutes;
+        function setDateTime() {
+          var today = new Date();
+          var day = String(today.getDate()).padStart(2, '0');
+          var month = String(today.getMonth() + 1).padStart(2, '0');
+          var year = today.getFullYear();
+          var hours = String(today.getHours()).padStart(2, '0');
+          var minutes = String(today.getMinutes()).padStart(2, '0');
+          var date = year + "-" + month + "-" + day;
+          var time = hours + ":" + minutes;
 
-        // $('#day').val(day);
-        // $('#time').val(time);
+          $('#datetime').val(date + "T" + time + ":00");
+        }
+        setDateTime();
+        setInterval(setDateTime, 60 * 1000);
     </script>
   </body>
 </html>
