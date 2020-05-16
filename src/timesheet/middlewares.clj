@@ -1,15 +1,22 @@
 (ns timesheet.middlewares
   (:gen-class)
-  (:require [java-time :as time]
-            [monger.core :as mg]
-            [monger.credentials :as mcr]))
+  (:require [monger.core :as mg]
+            [monger.credentials :as mcr]
+            [timesheet.db :as db]))
 
 (defn wrap-session
   "TODO"
   [handler]
   (fn [request]
     (handler (-> request
-                 (assoc :email "marcelo.gimenes.oliveira@gmail.com")))))
+                 (assoc :email "tonin@gmail.com")))))
+
+(defn wrap-db-user
+  "TODO"
+  [handler]
+  (fn [request]
+    (handler (-> request
+                 (assoc :user (db/get-user (:db request) (:email request)))))))
 
 (defn wrap-db
   "TODO 'localhost, default port'"

@@ -1,10 +1,12 @@
+(defn day-data
+[date]
 (let [review (should-review-day date)])
 (-> day
     (update :date time/local-date)
     (assoc :worked (calc-if-not-review calc-worked punches review))
     (assoc :left (calc-if-not-review calc-left punches review))
     (assoc :balance (calc-if-not-review calc-balance punches review))
-    (assoc :review review))
+    (assoc :review review)))
 
 (defn month-data
   "TODO"
@@ -12,7 +14,6 @@
   (as-> (vai month days) $
     {:month month :days (map day-data $)}
     (assoc $ :balance (calc-month-balance (:days $)))))
-
 
 (defn calc-worked
   "TODO"

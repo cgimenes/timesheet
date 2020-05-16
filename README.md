@@ -2,9 +2,18 @@
 
 FIXME: description
 
-## Installation
+## TODO
 
-Download from http://example.com/FIXME.
+* Allowances
+* * Show
+* * Add
+* Hide month
+* Auth
+* Export old timesheet
+* Fix remove dates without Padding 2020-01-5
+* Add initial balance
+* Add month fix balance feature
+* Calc weekends
 
 ## Usage
 

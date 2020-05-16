@@ -15,6 +15,6 @@
                   ;; :exclusions [ch.qos.logback/logback-classic]]
                 ;;  [org.yaml/snakeyaml "1.26"]
                  ]
-  :main ^:skip-aot timesheet.core
+  :main ^:skip-aot timesheet.main
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

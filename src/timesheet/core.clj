@@ -1,40 +1,21 @@
 (ns timesheet.core
-  (:gen-class)
-  (import java.time.YearMonth)
-  (:require [timesheet.filters :refer [month-format day-format dur-format time-format date-format]]
-            [timesheet.middlewares :refer [wrap-db wrap-session]]
-            [java-time :as time]
-            [clojure.data.json :as json]
-            [clojure.pprint :refer [pprint]]
-            [ring.adapter.jetty :as jetty]
-            [ring.util.response :as response]
-            [compojure.core :refer [defroutes context GET POST DELETE]]
-            [compojure.route :as route]
-            [ring.middleware.params :refer [wrap-params]]
-            [monger.collection :as mc]
-            [clojure.string :as str]
-            [selmer.parser :as tmpl]
-            [selmer.filters :refer [add-filter!]]))
-
-(def workday
-  "normal workday duration"
-  (time/duration 8 :hours))
-
-(def zero 
-  "a zeroed duration"
-  (time/duration))
-
-(def truncate
-  "truncate duration to minutes"
-  #(time/truncate-to % :minutes))
+  (:require [java-time :as time]))
 
 (def today
   "today's date"
   (time/local-date))
 
+(def zero
+  "a zeroed duration"
+  (time/duration))
+
 (def now
   "now's time"
   (time/local-time))
+
+(def truncate
+  "truncate duration to minutes"
+  #(time/truncate-to % :minutes))
 
 (defn should-review
   "returns true if it's an incomplete day (with odd) and date is before today"
@@ -50,12 +31,20 @@
                                  zero
                                  diff)))
 
-(defn reduce-day
+(def workday
+  "normal workday duration"
+  (time/duration 8 :hours))
+
+(defn day-reducer
   "TODO"
-  [date punches]
-  (let [not-calculated (or (time/weekend? date) (time/after? date today))]
+  [day]
+  (let [date (time/local-date (:date day))
+        punches (:punches day)
+        allowance (:allowance day)
+        not-calculated (or (time/weekend? date) (time/after? date today))]
     (if (should-review date punches)
-      {:punches        punches
+      {:date           (:date day)
+       :punches        punches
        :worked         zero
        :left           zero
        :balance        zero
@@ -63,169 +52,85 @@
        :not-calculated not-calculated}
       (reduce (fn [{worked  :worked
                     left    :left
-                    balance :balance
-                    review  :review} [a b]]
+                    balance :balance} [a b]]
                 (let [diff (time/duration (truncate a) (truncate b))]
-                  {:punches        punches
+                  {:date           (:date day)
+                   :punches        punches
                    :worked         (time/plus worked diff)
                    :left           (positive-minus left diff)
                    :balance        (time/plus balance diff)
                    :review         false
                    :not-calculated not-calculated}))
-              {:punches        punches
+              {:date           (:date day)
+               :punches        punches
                :worked         zero
                :left           (if not-calculated zero workday)
-               :balance        (if not-calculated zero (time/negate workday))
+               :balance        (if not-calculated zero (if allowance (time/plus (time/negate workday) (first allowance)) (time/negate workday)))
                :review         false
                :not-calculated not-calculated}
               (->> punches
                    (map time/local-time)
                    (partition 2 2 [now]))))))
 
-(defn assoc-merge
+(defn map-balance-corr-transducer
   "TODO"
-  [m f k v]
-  (if (contains? m k)
-    (assoc m k (f (get m k) v))
-    (assoc m k v)))
+  [map key xform]
+  (reduce (fn [acc x] (let [xf (xform x)] (-> acc
+                                              (assoc :balance (time/plus (:balance acc) (:balance xf)))
+                                              (assoc key (conj (key acc) xf)))))
+          (-> map
+              (assoc key [])
+              (assoc :balance (:correction map)))
+          (key map)))
 
-(defn month-merger
-  "TODO"
-  [& months]
-  {:days    (reduce merge (reverse (map :days months)))
-   :balance (reduce time/plus (map :balance months))})
-  
-(defn complete-month-days
+(defn month-transducer
   "TODO"
   [month]
-  (into {} (let [date       (apply time/local-date (map read-string (str/split month #"-")))
-                 month-days (take
-                             (.lengthOfMonth (YearMonth/of (time/as date :year) (time/as date :month-of-year)))
-                             (time/iterate time/plus date (time/days 1)))]
-             (map (fn [x] {(keyword (str x)) {:punches []}}) month-days))))
+  (map-balance-corr-transducer month
+                               :days
+                               day-reducer))
 
-(defn months-contains-date
-  [months date]
-  (let [month-number (month-format date)
-        day-number   (time/as date :day-of-month)]
-    (and
-     (contains? months month-number)
-     (contains? (:days (get months month-number)) day-number))))
-
-(defn timesheet-reducer
+(defn timesheet-transducer
   "TODO"
-  [{total-balance :balance
-    months        :months
-    :as           timesheet} [k {punches :punches}]]
-  (let [date (time/local-date (name k))]
-    (if (months-contains-date months date)
-      timesheet
-      (let [{day-balance :balance
-             :as         day}     (reduce-day date punches)
-            month-number                        (month-format date)
-            day-number                          (time/as date :day-of-month)
-            {month-balance :balance
-             :as           month} {:days    (sorted-map day-number day)
-                                   :balance day-balance}]
-        {:balance (time/plus total-balance month-balance)
-         :months  (assoc-merge months
-                               month-merger
-                               month-number
-                               month)}))))
+  [timesheet]
+  (map-balance-corr-transducer timesheet
+                               :months
+                               month-transducer))
 
-(defn reduce-timesheet
-  "TODO"
-  [dates]
-  (as-> dates $
-    (reduce timesheet-reducer {:balance zero
-                               :months  (sorted-map)} $)
-    (reduce timesheet-reducer $ (into (sorted-map) (map complete-month-days (keys (:months $)))))))
+(timesheet-transducer {:months [{:month "2020-02"
+                                 :days [{:date "2020-02-01" :punches [] :allowance nil}
+                                        {:date "2020-02-02" :punches [] :allowance nil}
+                                        {:date "2020-02-03" :punches ["09:28" "11:48" "13:45" "16:30"] :allowance [(time/duration 1 :hours) "Médico"]}
+                                        {:date "2020-02-04" :punches ["10:50" "13:14" "14:03" "14:42" "14:44" "21:01"] :allowance nil}
+                                        {:date "2020-02-05" :punches [] :allowance nil}
+                                        {:date "2020-02-06" :punches [] :allowance nil}
+                                        {:date "2020-02-07" :punches [] :allowance nil}
+                                        {:date "2020-02-08" :punches [] :allowance nil}
+                                        {:date "2020-02-09" :punches [] :allowance nil}
+                                        {:date "2020-02-10" :punches [] :allowance nil}
+                                        {:date "2020-02-11" :punches [] :allowance nil}
+                                        {:date "2020-02-12" :punches [] :allowance nil}
+                                        {:date "2020-02-13" :punches [] :allowance nil}
+                                        {:date "2020-02-14" :punches [] :allowance nil}
+                                        {:date "2020-02-15" :punches [] :allowance nil}
+                                        {:date "2020-02-16" :punches [] :allowance nil}
+                                        {:date "2020-02-17" :punches [] :allowance nil}
+                                        {:date "2020-02-18" :punches [] :allowance nil}
+                                        {:date "2020-02-19" :punches [] :allowance nil}
+                                        {:date "2020-02-20" :punches [] :allowance nil}
+                                        {:date "2020-02-21" :punches [] :allowance nil}
+                                        {:date "2020-02-22" :punches [] :allowance nil}
+                                        {:date "2020-02-23" :punches [] :allowance nil}
+                                        {:date "2020-02-24" :punches [] :allowance nil}
+                                        {:date "2020-02-25" :punches [] :allowance nil}
+                                        {:date "2020-02-26" :punches [] :allowance nil}
+                                        {:date "2020-02-27" :punches [] :allowance nil}
+                                        {:date "2020-02-28" :punches [] :allowance nil}
+                                        {:date "2020-02-29" :punches [] :allowance nil}]
+                                 :correction (time/duration 5 :minutes)}]
+                       :correction (time/duration 12 :hours)})
 
-(defn possible-departure
-  "TODO"
-  [left]
-  (time/plus now left))
-
-(defn user-data
-  "TODO"
-  [{dates :dates
-    email :email}]
-  (let [timesheet (reduce-timesheet dates)] {:timesheet          timesheet
-                                             :months             (keys (:months timesheet))
-                                             :possible-departure (-> timesheet
-                                                                     :months
-                                                                     (get (month-format today))
-                                                                     :days
-                                                                     (get (time/as today :day-of-month))
-                                                                     :left
-                                                                     possible-departure)
-                                             :email              email}))
-
-; TODO
-; * Allowances
-; * * Show
-; * * Add
-; * Hide month
-; * Auth
-; * Export old timesheet
-; * That refactor
-
-(defn get-user
-  "TODO"
-  [db email]
-  (mc/find-one-as-map db "users" {:email email}))
-
-(add-filter! :month-str month-format)
-
-(add-filter! :day-str day-format)
-
-(add-filter! :dur-str dur-format)
-
-(add-filter! :time-str time-format)
-
-(defn add-punch
-  "TODO"
-  [db {dates :dates
-       id    :_id
-       :as   user} datetime]
-  (let [date (keyword (date-format (time/local-date datetime)))
-        time (time-format (time/local-time datetime))
-        new  (if (contains? dates date)
-               (assoc-in user [:dates date :punches] (conj (get-in user [:dates date :punches]) time))
-               (assoc-in user [:dates date] {:punches [time]}))]
-    (mc/update-by-id db "users" id new)))
-
-(defn remove-punch
-  "TODO"
-  [db {dates :dates
-       id    :_id
-       :as   user} datetime]
-  (let [date (keyword (date-format (time/local-date datetime)))
-        time (time-format (time/local-time datetime))
-        new  (if (contains? dates date)
-               (assoc-in user [:dates date :punches] (remove (partial = time) (get-in user [:dates date :punches])))
-               user)]
-    (mc/update-by-id db "users" id new)))
-
-(defroutes app
-  (POST "/logout" [] (tmpl/render-file "templates/logout.html"))
-  (wrap-db
-   (wrap-session
-    (wrap-params
-     (context "/timesheet" []
-       (GET "/remove" {:keys [db email query-params]} (do (remove-punch db (get-user db email) (time/local-date-time (get query-params "datetime")))
-                                                                    (response/redirect "/timesheet" :see-other)))
-       (POST "/" {:keys [db email form-params]} (do (add-punch db (get-user db email) (time/local-date-time (get form-params "datetime")))
-                                                             (response/redirect "/timesheet" :see-other)))
-       (GET "/" {:keys [db email]}
-         (tmpl/render-file "templates/timesheet.html" (user-data (get-user db email))))))))
-  (route/not-found "<h1>Page not found</h1>"))
-
-;; (:body (app {:uri "/timesheet" :request-method :get})))
-;; (:body (app {:uri "/timesheet/remove" :query-params {"datetime" "2020-03-12T10:45:00"} :request-method :get}))
-;; (:body (app {:uri "/timesheet" :form-params {"datetime" "2020-03-12T13:06:00"} :request-method :post}))
-
-(defn -main
-  "TODO"
-  []
-  (jetty/run-jetty app {:port 8080}))
+(get-in (timesheet-transducer {:months [{:month "2020-02"
+                                         :days [{:date "2020-02-03" :punches ["09:28" "11:48" "13:45" "16:30"] :allowance [(time/duration 2 :hours) "Médico"]}]
+                                         :correction (time/duration 5 :minutes)}]
+                               :correction (time/duration 12 :hours)}) [:months 0 :days 0])

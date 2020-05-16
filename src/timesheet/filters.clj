@@ -1,5 +1,4 @@
 (ns timesheet.filters
-  (:gen-class)
   (:require [java-time :as time]))
 
 (defn dur-format
