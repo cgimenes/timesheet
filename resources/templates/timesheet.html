@@ -51,8 +51,8 @@
             <div class="d-flex justify-content-end align-items-center">
                 <!-- logged -->
                     <span class="navbar-text mr-2"><small>{{email}}</small></span>
-                    <span class="navbar-text mr-2"><small>Total balance: {{timesheet.balance|dur-str}}</small></span>
-                    <span class="navbar-text mr-2"><small>Possible departure: {{possible-departure|time-str}}</small></span>
+                    <span class="navbar-text mr-2"><small>Total balance: {%if timesheet.balance%}{{timesheet.balance|dur-str}}{%else%}-{%endif%}</small></span>
+                    <span class="navbar-text mr-2"><small>Possible departure: {%if possible-departure%}{{possible-departure|time-str}}{%else%}-{%endif%}</small></span>
                     <a rel="nofollow" data-method="delete" class="btn btn-outline-light btn-sm" href="" role="button">
                         <span class="icon">
                             <i class="fa fa-user-times"></i>
@@ -85,7 +85,7 @@
         </div>
         <div class="col-9">
           <div class="tab-content">
-            {%for month, month-data in timesheet.months%}
+            {%for month in timesheet.months%}
               <div class="tab-pane fade{%if forloop.first%} show active{%endif%}" id="v-pills-{{month}}" role="tabpanel">
                 <table class="table table-hover table-sm">
                     <thead class="thead-light">
@@ -98,24 +98,25 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {%for day, day-data in month-data.days%} 
-                        <tr class="punch {%if day-data.review%}table-warning{%endif%}{%if day-data.not-calculated%}table-secondary{%endif%}" >
-                            <td>{{day}}</td>
+                        {%for day in month.days%} 
+                        <tr class="punch {%if day.review%}table-warning{%endif%}{%if day.not-calculated%}table-secondary{%endif%}" >
+                            <td>{{day.date}}</td>
                             <td>
-                              {%for punch in day-data.punches%}
+                              {%for punch in day.punches%}
                               <span class="punch">
-                                {{punch}} <a href="/timesheet/remove?datetime={{month}}-{{day}}T{{punch}}" class="badge badge-pill badge-danger">X</a>
-                              </span>{%endfor%}
+                                {{punch}} <a href="/timesheet/remove?datetime={{day.date}}T{{punch}}" class="badge badge-pill badge-danger">X</a>
+                              </span>
+                              {%endfor%}
                             </td>
-                            <td>{{day-data.worked|dur-str}}</td>
-                            <td>{{day-data.left|dur-str}}</td>
-                            <td>{{day-data.balance|dur-str}}</td>
+                            <td>{{day.worked|dur-str}}</td>
+                            <td>{{day.left|dur-str}}</td>
+                            <td>{{day.balance|dur-str}}</td>
                         </tr>
                         {%endfor%}
                     </tbody>
                     <tfoot>
                         <tr class="table-dark">
-                            <td colspan="5" class="text-right"><strong>Month balance: {{month-data.balance|dur-str}}</strong></td>
+                            <td colspan="5" class="text-right"><strong>Month balance: {{month.balance|dur-str}}</strong></td>
                         </tr>
                     </tfoot>
                 </table>

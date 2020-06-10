@@ -1,49 +1,55 @@
-# install.packages("jsonlite")
-# install.packages("tidyverse")
-# install.packages("data.table")
-
-library(jsonlite)
-library(ggplot2)
+library(readr)
 library(dplyr)
-library(lubridate)
-library(data.table)
-dates <- fromJSON("dates2.json", flatten = TRUE)
-#sorted <- dates[order(dates$date),]
-#df <- data.frame("date" = strptime(sorted$date,"%Y-%m-%d"), "first" = strptime(sorted$punch0,"%H:%M"))
-#b <- ggplot(df, aes(x = date, y = first))
-#b + geom_point() + geom_smooth(method = "loess")
+library(ggplot2)
+library(scales)
+library(zoo)
 
-dates$data <- as.Date(dates$date)
-dates %>% 
-  mutate(hour = as.factor(hour(hm(punch0))),
-         monthYear = as.factor(format(data, "%Y-%m"))) %>% 
-  select(monthYear,hour)  %>% 
-  count(monthYear,hour) %>% 
-  arrange(monthYear,hour) %>% 
-  ggplot(aes(monthYear,hour,fill=n)) +
-  geom_tile()
+dates <-
+  read_csv(
+    "dates.csv",
+    col_types = cols(
+      Date = col_date(format = "%Y-%m-%d"),
+      Punch0 = col_time(format = "%H:%M"),
+      Punch1 = col_time(format = "%H:%M"),
+      Punch2 = col_time(format = "%H:%M"),
+      Punch3 = col_time(format = "%H:%M"),
+      Punch4 = col_time(format = "%H:%M"),
+      Punch5 = col_time(format = "%H:%M"),
+      Punch6 = col_time(format = "%H:%M"),
+      Punch7 = col_time(format = "%H:%M")
+    )
+  )
 
-plot <- dates %>% 
-  mutate(dt = as.ITime(strptime(punch0,"%H:%M")),
-         monthYear = as.factor(format(data, "%Y-%m"))) %>% 
-  group_by(monthYear) %>% 
-  summarise(media = mean(dt),
-            std= sd(dt)) %>% 
-  arrange(monthYear)
-plot$media = as.numeric(plot$media)
-nums <- seq(from = mean(plot$media) - 21000 , to =  mean(plot$media) +21000, length.out = 9)
-labels <- as.POSIXct(nums, origin = "1970-01-01", tz = "GMT") %>%
-  format("%H:%M")
+df <- dates %>%
+  filter(!is.na(Punch0)) %>%
+  filter(Punch0 > as.difftime("05:00", "%H:%M")) %>%
+  filter(format(Date, "%u") < 6) %>%
+  group_by(Week = format(Date, "%Y-%U")) %>%
+  summarise(
+    Min = as.POSIXct(min(as.numeric(Punch0)), origin = "1970-01-01", tz = "GMT"),
+    Max = as.POSIXct(max(as.numeric(Punch0)), origin = "1970-01-01", tz = "GMT"),
+    Mean = as.POSIXct(mean(as.numeric(Punch0)), origin = "1970-01-01", tz = "GMT"),
+    Date = Date[1],
+    SD = as.POSIXct(sd(as.numeric(Punch0)), origin = "1970-01-01", tz = "GMT")
+  ) %>%
+  mutate(Late = as.numeric(Mean) > as.numeric(as.difftime("10:00", "%H:%M"), units = "secs")) %>%
+  mutate(RollMean = rollmean(Mean, 4, fill = NA)) %>%
+  mutate(Upper = as.POSIXct(as.numeric(RollMean) + as.numeric(SD), origin = "1970-01-01", tz = "GMT")) %>%
+  mutate(Lower = as.POSIXct(as.numeric(RollMean) - as.numeric(SD), origin = "1970-01-01", tz = "GMT"))
+
+ggplot(df, aes(x = Date)) +
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), fill = "grey80") +
+  geom_errorbar(aes(ymin = Min, ymax = Max)) +
+  geom_point(aes(x = Date, y = Mean),
+             color = ifelse(df$Late, 'red', 'blue')) +
+  scale_y_datetime(labels = date_format("%H:%M"),
+                   breaks = date_breaks("1 hour")) +
+  scale_x_date(labels = date_format("%Y-%m"),
+               breaks = date_breaks("6 months"),
+               minor_breaks = date_breaks("1 month")) +
+  geom_hline(yintercept = as.numeric(as.difftime("10:00", "%H:%M"), units = "secs"), color="green") +
+  geom_smooth(aes(x = Date, y = Mean), method = "loess", span = 0.1, se = FALSE) +
+  geom_line(aes(x = Date, y = SD)) +
+  geom_smooth(aes(x = Date, y = SD), method = "loess", span = 0.1, se = FALSE)
 
 
-ggplot(plot, aes(x=monthYear, y=media))+
-  geom_bar(position=position_dodge(), stat="identity") +
-  geom_errorbar(aes(ymin=media-std, ymax=media+std),
-                width=.2,position=position_dodge(.9)) +
-  xlab('Mes-Ano') + 
-  ylab('Hora') +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylim(c(min(nums), max(nums)))+
-  scale_y_continuous(breaks = nums,labels = labels)
-
-# http://www.sthda.com/english/articles/32-r-graphics-essentials/131-plot-two-continuous-variables-scatter-graph-and-alternatives/

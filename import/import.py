@@ -1,8 +1,7 @@
 import os
 import re
-import json
+import csv
 from datetime import datetime
-from bs4 import BeautifulSoup
 
 time_pattern = re.compile("^\d{2}:\d{2}$")
 date_pattern = re.compile("^\d{2}/\d{2}/\d{4}$")
@@ -10,7 +9,7 @@ date_pattern = re.compile("^\d{2}/\d{2}/\d{4}$")
 files_dir = 'import/files/'
 files = os.listdir(files_dir)
 
-dates = {}
+dates = []
 
 for filename in files:
     f = open(files_dir + filename, "r")
@@ -24,7 +23,9 @@ for filename in files:
         if not date_pattern.match(date):
             date = date + '/' + filename.split('-')[0]
 
-        date = datetime.strptime(date, '%d/%m/%Y').strftime('%Y-%m-%d')
+        parsed_date = datetime.strptime(date, '%d/%m/%Y')
+        
+        date = parsed_date.strftime('%Y-%m-%d')
 
         punches = []
         for j in range(2, 10):
@@ -35,11 +36,21 @@ for filename in files:
                 if punch != '':
                     print("Date: %s - Punch: %s" % (date, punch))
 
-        if len(punches) != 0:
-            dates[date] = {
-                "punches": punches
-            }
+        date_obj = {
+            "date": date
+        }
 
-result_file = open("dates.json", "w")
-result_file.write(json.dumps(dates))
-result_file.close()
+        for k in range(0, 8):
+            if (k < len(punches)):
+                date_obj["punch"+str(k)] = punches[k]
+            else:
+                date_obj["punch"+str(k)] = ''
+
+        dates.append(date_obj)
+
+
+with open('dates.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Date', 'Punch0', 'Punch1', 'Punch2', 'Punch3', 'Punch4', 'Punch5', 'Punch6', 'Punch7'])
+    for date in dates:
+        writer.writerow([date["date"], date["punch0"], date["punch1"], date["punch2"], date["punch3"], date["punch4"], date["punch5"], date["punch6"], date["punch7"]])

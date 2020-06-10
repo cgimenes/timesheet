@@ -11,6 +11,7 @@
                  [ring/ring-jetty-adapter "1.8.0"]
                  [compojure "1.6.1"]
                  [selmer "1.12.18"]
+                 [philoskim/debux "0.6.8"]
                 ;;  [org.liquibase/liquibase-core "3.8.7"
                   ;; :exclusions [ch.qos.logback/logback-classic]]
                 ;;  [org.yaml/snakeyaml "1.26"]

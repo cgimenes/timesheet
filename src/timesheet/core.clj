@@ -1,5 +1,7 @@
 (ns timesheet.core
-  (:require [java-time :as time]))
+  (import java.time.YearMonth)
+  (:require [java-time :as time]
+            [timesheet.filters :refer [month-format date-format time-format]]))
 
 (def today
   "today's date"
@@ -27,53 +29,72 @@
   "returns the difference between two durations only if the difference is greater than zero, 
    otherwise returns a zeroed duration"
   [a b]
-  (let [diff (time/minus a b)] (if (time/negative? diff)
-                                 zero
-                                 diff)))
+  (let [diff (time/minus a b)]
+    (if (time/negative? diff)
+      zero
+      diff)))
 
 (def workday
   "normal workday duration"
   (time/duration 8 :hours))
 
-(defn day-reducer
+(defn not-calculated
   "TODO"
-  [day]
-  (let [date (time/local-date (:date day))
-        punches (:punches day)
-        allowance (:allowance day)
-        not-calculated (or (time/weekend? date) (time/after? date today))]
-    (if (should-review date punches)
-      {:date           (:date day)
-       :punches        punches
-       :worked         zero
-       :left           zero
-       :balance        zero
-       :review         true
-       :not-calculated not-calculated}
+  [date]
+  (or (time/weekend? date) (time/after? date today)))
+
+(defn day-transformer
+  "TODO doc and refactory"
+  [{date :date punches :punches allowance :allowance}]
+  (let [not-calculated (not-calculated date)
+        should-review (should-review date punches)
+        sorted-punches (sort punches)]
+    (if should-review
       (reduce (fn [{worked  :worked
                     left    :left
                     balance :balance} [a b]]
                 (let [diff (time/duration (truncate a) (truncate b))]
-                  {:date           (:date day)
-                   :punches        punches
+                  {:date           date
+                   :allowance      allowance
+                   :punches        sorted-punches
+                   :worked         (time/plus worked diff)
+                   :left           (positive-minus left diff)
+                   :balance        (time/plus balance diff)
+                   :review         true
+                   :not-calculated not-calculated}))
+              {:date           date
+               :allowance      allowance
+               :punches        sorted-punches
+               :worked         zero
+               :left           (if not-calculated zero workday)
+               :balance        (if not-calculated zero (if allowance (time/plus (time/negate workday) (first allowance)) (time/negate workday)))
+               :review         true
+               :not-calculated not-calculated}
+              (partition 2 sorted-punches))
+      (reduce (fn [{worked  :worked
+                    left    :left
+                    balance :balance} [a b]]
+                (let [diff (time/duration (truncate a) (truncate b))]
+                  {:date           date
+                   :allowance      allowance
+                   :punches        sorted-punches
                    :worked         (time/plus worked diff)
                    :left           (positive-minus left diff)
                    :balance        (time/plus balance diff)
                    :review         false
                    :not-calculated not-calculated}))
-              {:date           (:date day)
-               :punches        punches
+              {:date           date
+               :allowance      allowance
+               :punches        sorted-punches
                :worked         zero
                :left           (if not-calculated zero workday)
                :balance        (if not-calculated zero (if allowance (time/plus (time/negate workday) (first allowance)) (time/negate workday)))
                :review         false
                :not-calculated not-calculated}
-              (->> punches
-                   (map time/local-time)
-                   (partition 2 2 [now]))))))
+              (partition 2 2 [now] sorted-punches)))))
 
 (defn map-balance-corr-transducer
-  "TODO"
+  "reduce (time/plus) the transformations (xform) of coll (key map)"
   [map key xform]
   (reduce (fn [acc x] (let [xf (xform x)] (-> acc
                                               (assoc :balance (time/plus (:balance acc) (:balance xf)))
@@ -84,53 +105,88 @@
           (key map)))
 
 (defn month-transducer
-  "TODO"
   [month]
   (map-balance-corr-transducer month
                                :days
-                               day-reducer))
+                               day-transformer))
 
 (defn timesheet-transducer
-  "TODO"
   [timesheet]
   (map-balance-corr-transducer timesheet
                                :months
                                month-transducer))
 
-(timesheet-transducer {:months [{:month "2020-02"
-                                 :days [{:date "2020-02-01" :punches [] :allowance nil}
-                                        {:date "2020-02-02" :punches [] :allowance nil}
-                                        {:date "2020-02-03" :punches ["09:28" "11:48" "13:45" "16:30"] :allowance [(time/duration 1 :hours) "Médico"]}
-                                        {:date "2020-02-04" :punches ["10:50" "13:14" "14:03" "14:42" "14:44" "21:01"] :allowance nil}
-                                        {:date "2020-02-05" :punches [] :allowance nil}
-                                        {:date "2020-02-06" :punches [] :allowance nil}
-                                        {:date "2020-02-07" :punches [] :allowance nil}
-                                        {:date "2020-02-08" :punches [] :allowance nil}
-                                        {:date "2020-02-09" :punches [] :allowance nil}
-                                        {:date "2020-02-10" :punches [] :allowance nil}
-                                        {:date "2020-02-11" :punches [] :allowance nil}
-                                        {:date "2020-02-12" :punches [] :allowance nil}
-                                        {:date "2020-02-13" :punches [] :allowance nil}
-                                        {:date "2020-02-14" :punches [] :allowance nil}
-                                        {:date "2020-02-15" :punches [] :allowance nil}
-                                        {:date "2020-02-16" :punches [] :allowance nil}
-                                        {:date "2020-02-17" :punches [] :allowance nil}
-                                        {:date "2020-02-18" :punches [] :allowance nil}
-                                        {:date "2020-02-19" :punches [] :allowance nil}
-                                        {:date "2020-02-20" :punches [] :allowance nil}
-                                        {:date "2020-02-21" :punches [] :allowance nil}
-                                        {:date "2020-02-22" :punches [] :allowance nil}
-                                        {:date "2020-02-23" :punches [] :allowance nil}
-                                        {:date "2020-02-24" :punches [] :allowance nil}
-                                        {:date "2020-02-25" :punches [] :allowance nil}
-                                        {:date "2020-02-26" :punches [] :allowance nil}
-                                        {:date "2020-02-27" :punches [] :allowance nil}
-                                        {:date "2020-02-28" :punches [] :allowance nil}
-                                        {:date "2020-02-29" :punches [] :allowance nil}]
-                                 :correction (time/duration 5 :minutes)}]
-                       :correction (time/duration 12 :hours)})
+(defn find-first
+  [f coll]
+  (some #(if (f %) % nil) coll))
 
-(get-in (timesheet-transducer {:months [{:month "2020-02"
-                                         :days [{:date "2020-02-03" :punches ["09:28" "11:48" "13:45" "16:30"] :allowance [(time/duration 2 :hours) "Médico"]}]
-                                         :correction (time/duration 5 :minutes)}]
-                               :correction (time/duration 12 :hours)}) [:months 0 :days 0])
+(defn find-month
+  "TODO"
+  [months date]
+  (find-first #(= (month-format date) (:month %)) months))
+
+(defn find-day
+  "TODO"
+  [{month :month days :days} date]
+  (when (= month (month-format date))
+    (find-first #(= date (:date %)) days)))
+
+(defn possible-departure
+  "TODO"
+  [{months :months} date]
+  (when-let [day (some-> months
+                         (find-month date)
+                         (find-day date))]
+    (if (= (:left day) zero)
+      now
+      (when-let [last-punch (last (:punches day))]
+        (time/plus last-punch (:left day))))))
+
+(defn complete-month-days
+  "TODO"
+  [date]
+  (let [first-day-of-month (time/adjust date :first-day-of-month)
+        month-days (take
+                    (.lengthOfMonth (YearMonth/of (time/as date :year) (time/as date :month-of-year)))
+                    (time/iterate time/plus first-day-of-month (time/days 1)))]
+    (vec (map (fn [x] {:date x :punches [] :allowance nil}) month-days))))
+
+(defn add-month-if-not-present
+  "TODO"
+  [months date]
+  (if-not (find-month months date)
+    (conj months {:month (month-format date) :days (complete-month-days date) :correction zero})
+    months))
+
+(defn find-first-index
+  [f coll]
+  (first (keep-indexed #(when (f %2) %1) coll)))
+
+(defn find-month-index
+  [months date]
+  (find-first-index #(= (month-format date) (:month %)) months))
+
+(defn find-day-index
+  [{month :month days :days} date]
+  (when (= month (month-format date))
+    (find-first-index #(= date (:date %)) days)))
+
+(defn add-punch
+  "TODO"
+  [{months :months :as timesheet} date time]
+  (let [new-months (add-month-if-not-present months date)
+        new-timesheet (assoc timesheet :months new-months)
+        month-index (find-month-index new-months date)
+        day-index (find-day-index (get new-months month-index) date)
+        new-punches (conj (get-in new-timesheet [:months month-index :days day-index :punches]) time)]
+    (assoc-in new-timesheet [:months month-index :days day-index :punches] new-punches)))
+
+(defn remove-punch
+  "TODO"
+  [{months :months :as timesheet} date time]
+  (let [month-index (find-month-index months date)
+        day-index (find-day-index (get months month-index) date)
+        new-punches (remove (partial = time) (get-in timesheet [:months month-index :days day-index :punches]))]
+    (if month-index
+      (assoc-in timesheet [:months month-index :days day-index :punches] new-punches)
+      timesheet)))

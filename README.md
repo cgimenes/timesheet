@@ -4,16 +4,17 @@ FIXME: description
 
 ## TODO
 
-* Allowances
-* * Show
-* * Add
+* Update frontend
+    * {{possible-departure|time-str}}
+* Fix punch addition
+* Fix punch removal
+* Add month
 * Hide month
 * Auth
-* Export old timesheet
-* Fix remove dates without Padding 2020-01-5
-* Add initial balance
-* Add month fix balance feature
-* Calc weekends
+* day-reducer refactory
+* Tests
+    - Possible departure already ended today
+    - Fix test date types
 
 ## Usage
 
