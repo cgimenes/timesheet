@@ -4,14 +4,13 @@ FIXME: description
 
 ## TODO
 
-* Update frontend
-    * {{possible-departure|time-str}}
-* Fix punch addition
-* Fix punch removal
-* Add month
-* Hide month
+* Corrections
+    * Timesheet
+    * Month
+    * Day's allowances
 * Auth
 * day-reducer refactory
+* Frontend refactory
 * Tests
     - Possible departure already ended today
     - Fix test date types

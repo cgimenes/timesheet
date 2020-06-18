@@ -1,38 +1,57 @@
 (ns timesheet.main
   (:gen-class)
   (:require [timesheet.middlewares :refer [wrap-db wrap-session wrap-db-user]]
-            [timesheet.filters :refer [day-format dur-format month-format time-format]]
             [timesheet.services :refer [remove-punch add-punch user-data]]
             [java-time :as time]
             [ring.adapter.jetty :as jetty]
-            [ring.util.response :as response]
-            [compojure.core :refer [defroutes context GET POST]]
+            [ring.util.response :refer [response]]
+            [ring.middleware.json :refer [wrap-json-response]]
+            [compojure.core :refer [defroutes context GET POST OPTIONS]]
             [compojure.route :as route]
             [ring.middleware.params :refer [wrap-params]]
-            [selmer.parser :as tmpl]
-            [selmer.filters :refer [add-filter!]]))
+            [cheshire.generate]))
 
-(add-filter! :month-str month-format)
-(add-filter! :day-str day-format)
-(add-filter! :dur-str dur-format)
-(add-filter! :time-str time-format)
+(extend-protocol cheshire.generate/JSONable
+  java.time.LocalDate
+  (to-json [dt gen]
+    (cheshire.generate/write-string gen (str dt)))
+  java.time.Duration
+  (to-json [dt gen]
+    (cheshire.generate/write-string gen (str dt)))
+  java.time.LocalTime
+  (to-json [dt gen]
+    (cheshire.generate/write-string gen (str dt))))
+
+(use 'debux.core)
 
 (defroutes app
-  (POST "/logout" [] (tmpl/render-file "templates/logout.html"))
-  (wrap-db
-   (wrap-session
-    (wrap-params
-     (wrap-db-user
-      (context "/timesheet" []
-        (GET "/remove" {:keys [db user query-params]} (do (remove-punch db user (time/local-date-time (get query-params "datetime")))
-                                                          (response/redirect "/timesheet" :see-other)))
-        (POST "/" {:keys [db user form-params]} (do (add-punch db user (time/local-date-time (get form-params "datetime")))
-                                                    (response/redirect "/timesheet" :see-other)))
-        (GET "/" {:keys [user]}
-          (tmpl/render-file "templates/timesheet.html" (user-data user))))))))
-  (route/not-found "<h1>Page not found</h1>"))
+  (context "/api" []
+    (context "/timesheet" []
+      (OPTIONS "/" {:status 200
+                    :headers {"Access-Control-Allow-Methods" "POST, GET"
+                              "Access-Control-Allow-Headers" "Authorization"}
+                    :body ""})
+      (wrap-db
+       (wrap-session
+        (wrap-params
+         (wrap-db-user
+          (wrap-json-response
+           (GET "/remove" {:keys [db user query-params]} (remove-punch db user (time/local-date-time (get query-params "datetime")))))))))
+      (wrap-db
+       (wrap-session
+        (wrap-params
+         (wrap-db-user
+          (wrap-json-response
+           (POST "/" {:keys [db user form-params]} (add-punch db user (time/local-date-time (get form-params "datetime")))))))))
+      (wrap-db
+       (wrap-session
+        (wrap-params
+         (wrap-db-user
+          (wrap-json-response
+           (GET "/" {:keys [user]} (response (user-data user))))))))))
+  (route/not-found ""))
 
 (defn -main
   "TODO"
   []
-  (jetty/run-jetty app {:port 8080}))
+  (jetty/run-jetty app {:port 8082}))

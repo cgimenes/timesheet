@@ -2,14 +2,35 @@
   (:gen-class)
   (:require [monger.core :as mg]
             [monger.credentials :as mcr]
-            [timesheet.db :as db]))
+            [timesheet.db :as db]
+            [buddy.auth.middleware :refer [wrap-authentication]]
+            [buddy.auth.backends :as backends]
+            [clj-http.client :as client]))
+
+(use 'debux.core)
+
+(defn get-user-email
+  [token]
+  (dbg (let [response (client/get "https://dev-03ovpnrf.us.auth0.com/userinfo" {:headers {"Authorization" (str "Bearer " token)}
+                                                                                :as :json
+                                                                                :throw-exceptions false})]
+         (when (= 200 (:status response))
+           (let [{email :email} (:body response)]
+             email)))))
+
+(defn authentication
+  [_ token]
+  (dbg token)
+  (let [token (keyword token)]
+    (get-user-email token)))
 
 (defn wrap-session
   "TODO"
   [handler]
   (fn [request]
-    (handler (-> request
-                 (assoc :email "tonin@gmail.com")))))
+    (wrap-authentication (handler (-> request
+                                      (assoc :email (:identity request))))
+                         (backends/token {:authfn authentication}))))
 
 (defn wrap-db-user
   "TODO"
