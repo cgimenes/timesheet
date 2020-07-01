@@ -4,11 +4,12 @@ FIXME: description
 
 ## TODO
 
-* Corrections
+* Add corrections
     * Timesheet
     * Month
     * Day's allowances
-* Auth
+* Auth cache (https://github.com/clojure/core.cache)
+    * Cache expiration
 * day-reducer refactory
 * Frontend refactory
 * Tests

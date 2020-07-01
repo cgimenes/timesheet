@@ -3,19 +3,12 @@
             [timesheet.db :as db]
             [timesheet.core :as core]))
 
-(defn months-names
-  "TODO"
-  [months]
-  (map (fn [x] (:month x)) months))
-
 (defn user-data
   "TODO"
-  [{timesheet :timesheet email :email}]
+  [{timesheet :timesheet}]
   (let [reduced-timesheet (core/timesheet-transducer timesheet)]
     {:timesheet reduced-timesheet
-     :months (months-names (:months reduced-timesheet))
-     :possible-departure (core/possible-departure reduced-timesheet core/today)
-     :email email}))
+     :possible-departure (core/possible-departure reduced-timesheet core/today)}))
 
 (defn add-punch
   "TODO"

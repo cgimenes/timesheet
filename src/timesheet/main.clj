@@ -6,8 +6,9 @@
             [ring.adapter.jetty :as jetty]
             [ring.util.response :refer [response]]
             [ring.middleware.json :refer [wrap-json-response]]
-            [compojure.core :refer [defroutes context GET POST OPTIONS]]
+            [compojure.core :refer [defroutes context GET POST DELETE]]
             [compojure.route :as route]
+            [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.params :refer [wrap-params]]
             [cheshire.generate]))
 
@@ -22,34 +23,24 @@
   (to-json [dt gen]
     (cheshire.generate/write-string gen (str dt))))
 
-(use 'debux.core)
-
 (defroutes app
-  (context "/api" []
-    (context "/timesheet" []
-      (OPTIONS "/" {:status 200
-                    :headers {"Access-Control-Allow-Methods" "POST, GET"
-                              "Access-Control-Allow-Headers" "Authorization"}
-                    :body ""})
-      (wrap-db
-       (wrap-session
-        (wrap-params
-         (wrap-db-user
-          (wrap-json-response
-           (GET "/remove" {:keys [db user query-params]} (remove-punch db user (time/local-date-time (get query-params "datetime")))))))))
-      (wrap-db
-       (wrap-session
-        (wrap-params
-         (wrap-db-user
-          (wrap-json-response
-           (POST "/" {:keys [db user form-params]} (add-punch db user (time/local-date-time (get form-params "datetime")))))))))
-      (wrap-db
-       (wrap-session
-        (wrap-params
-         (wrap-db-user
-          (wrap-json-response
-           (GET "/" {:keys [user]} (response (user-data user))))))))))
-  (route/not-found ""))
+  (wrap-cors
+   (wrap-db
+    (wrap-session
+     (wrap-params
+      (wrap-db-user
+       (wrap-json-response
+        (context "/api" []
+          (context "/timesheet" []
+            (DELETE "/" {:keys [db user form-params]}
+              (remove-punch db user (time/local-date-time (get form-params "datetime"))))
+            (POST "/" {:keys [db user form-params]}
+              (add-punch db user (time/local-date-time (get form-params "datetime"))))
+            (GET "/" {:keys [user]}
+              (response (user-data user))))))))))
+   :access-control-allow-methods [:get :post :delete]
+   :access-control-allow-origin #".*")
+  (route/not-found nil))
 
 (defn -main
   "TODO"

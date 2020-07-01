@@ -8,6 +8,7 @@
                  [com.novemberain/monger "3.5.0"]
                  [ring/ring-core "1.8.0"]
                  [ring/ring-jetty-adapter "1.8.0"]
+                 [ring-cors/ring-cors "0.1.13"]
                  [compojure "1.6.1"]
                  [philoskim/debux "0.6.8"]
                  [ring/ring-json "0.5.0"]
