@@ -2,7 +2,7 @@ import os
 import locale
 from datetime import datetime
 
-files_dir = 'files/'
+files_dir = 'import/files/'
 files = os.listdir(files_dir)
 
 for filename in files:

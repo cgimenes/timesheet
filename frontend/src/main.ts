@@ -3,6 +3,7 @@ import App from './App.vue';
 import './registerServiceWorker';
 import router from './router';
 import { Auth0Plugin } from './auth';
+import './assets/styles/index.scss';
 
 Vue.use(Auth0Plugin, {
   domain: 'dev-03ovpnrf.us.auth0.com',

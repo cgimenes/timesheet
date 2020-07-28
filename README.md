@@ -12,9 +12,11 @@ FIXME: description
     * Cache expiration
 * day-reducer refactory
 * Frontend refactory
+    * PurgeCSS
 * Tests
     - Possible departure already ended today
     - Fix test date types
+* API key for users
 
 ## Usage
 

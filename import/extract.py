@@ -2,6 +2,8 @@ import os
 import re
 import csv
 from datetime import datetime
+from bs4 import BeautifulSoup
+
 
 time_pattern = re.compile("^\d{2}:\d{2}$")
 date_pattern = re.compile("^\d{2}/\d{2}/\d{4}$")
@@ -49,7 +51,7 @@ for filename in files:
         dates.append(date_obj)
 
 
-with open('dates.csv', 'w', newline='') as csvfile:
+with open('import/dates.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['Date', 'Punch0', 'Punch1', 'Punch2', 'Punch3', 'Punch4', 'Punch5', 'Punch6', 'Punch7'])
     for date in dates:

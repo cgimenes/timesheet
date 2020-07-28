@@ -9,9 +9,9 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="60.446445mm"
+   height="42.461643mm"
+   viewBox="0 0 60.446445 42.461643"
    version="1.1"
    id="svg8"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
@@ -26,18 +26,22 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2"
-     inkscape:cx="293.42528"
-     inkscape:cy="546.70998"
+     inkscape:cx="175.8672"
+     inkscape:cy="74.6894"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:measure-start="324.543,434.83"
      inkscape:measure-end="213.546,510.885"
      inkscape:window-width="1920"
-     inkscape:window-height="1060"
+     inkscape:window-height="1080"
      inkscape:window-x="0"
-     inkscape:window-y="20"
-     inkscape:window-maximized="0" />
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -53,14 +57,16 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-55.420845,-140.50386)">
     <path
-       style="fill:none;stroke:#000000;stroke-width:7.55905522;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 324.54297 557.3457 A 69.006554 69.006554 0 0 0 282.25 542.76367 A 69.006554 69.006554 0 0 0 213.24414 611.76953 A 69.006554 69.006554 0 0 0 282.25 680.77539 A 69.006554 69.006554 0 0 0 324.54297 666.25391 L 324.54297 557.3457 z "
+       style="fill:none;stroke:#000000;stroke-width:7.55905533;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 324.54297,557.3457 A 69.006554,69.006554 0 0 0 282.25,542.76367 69.006554,69.006554 0 0 0 213.24414,611.76953 69.006554,69.006554 0 0 0 282.25,680.77539 69.006554,69.006554 0 0 0 324.54297,666.25391 Z"
        id="path4659"
        transform="scale(0.26458333)"
        inkscape:export-xdpi="96"
-       inkscape:export-ydpi="96" />
+       inkscape:export-ydpi="96"
+       inkscape:connector-curvature="0" />
     <path
        style="opacity:1;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        d="m 85.868639,141.5181 v 40.43316"
@@ -112,7 +118,7 @@
        inkscape:export-xdpi="96"
        inkscape:export-ydpi="96" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 56.500778,161.82843 h 3.133735"
        id="path4680"
        inkscape:connector-curvature="0"

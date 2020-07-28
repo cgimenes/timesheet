@@ -1,18 +1,24 @@
 <template>
-  <div id="app">
-    <Nav />
-    <router-view/>
+  <div id="app" class="antialiased text-gray-900">
+    <div class="bg-gray-100 min-h-screen xl:flex xl:flex-col xl:h-screen">
+      <Navbar />
+      <div class="xl:flex-1 xl:flex xl:overflow-y-hidden">
+        <Sidebar />
+        <router-view class="py-6 xl:flex-1 xl:overflow-x-hidden"/>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import Nav from '@/components/partials/Nav.vue';
+import Navbar from '@/components/partials/Navbar.vue';
+import Sidebar from '@/components/partials/Sidebar.vue';
 
 export default {
   name: 'App',
   components: {
-    Nav,
+    Navbar,
+    Sidebar,
   },
 };
 </script>
