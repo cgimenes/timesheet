@@ -16,6 +16,7 @@ FIXME: description
 * Tests
     - Possible departure already ended today
     - Fix test date types
+    - Month sorting
 * API key for users
 
 ## Usage

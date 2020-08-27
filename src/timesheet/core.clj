@@ -1,7 +1,7 @@
 (ns timesheet.core
   (import java.time.YearMonth)
   (:require [java-time :as time]
-            [timesheet.filters :refer [month-format date-format time-format]]))
+            [timesheet.filters :refer [month-format]]))
 
 (def today
   "today's date"
@@ -94,27 +94,29 @@
               (partition 2 2 [now] sorted-punches)))))
 
 (defn map-balance-corr-transducer
-  "reduce (time/plus) the transformations (xform) of coll (key map)"
-  [map key xform]
+  "reduce (time/plus) the transformations (xform) of coll (key map) sorting by skey"
+  [map key xform skey]
   (reduce (fn [acc x] (let [xf (xform x)] (-> acc
                                               (assoc :balance (time/plus (:balance acc) (:balance xf)))
                                               (assoc key (conj (key acc) xf)))))
           (-> map
               (assoc key [])
               (assoc :balance (:correction map)))
-          (key map)))
+          (sort-by skey (key map))))
 
 (defn month-transducer
   [month]
   (map-balance-corr-transducer month
                                :days
-                               day-transformer))
+                               day-transformer
+                               :date))
 
 (defn timesheet-transducer
   [timesheet]
   (map-balance-corr-transducer timesheet
                                :months
-                               month-transducer))
+                               month-transducer
+                               :month))
 
 (defn find-first
   [f coll]

@@ -13,6 +13,26 @@
           </svg>
         </button>
       </div>
+      <button @click="loadTimesheet" class="text-gray-500">Load timesheet</button>
+      <button @click="toggleShowMoreInfo" class="text-gray-500">Toggle more info</button>
+      <label class="block w-full px-2 sm:w-1/2 lg:w-full" v-if="$store.state.actualMonth !== null">
+        <span class="text-sm font-semibold text-gray-500">Month</span>
+        <div class="flex justify-between">
+          <span class="text-sm text-gray-500">{{$store.state.timesheet.months[$store.state.actualMonth].month}}</span>
+          <div class="flex justify-between w-16 px-1 text-gray-500">
+            <div class="h-6 w-6 flex justify-center items-center hover:bg-gray-900 rounded-full cursor-pointer" v-if="$store.state.actualMonth > 0" @click="previousMonth">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </div>
+            <div class="h-6 w-6 flex justify-center items-center hover:bg-gray-900 rounded-full cursor-pointer" v-if="$store.state.actualMonth < $store.state.timesheet.months.length - 1" @click="nextMonth">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </label>
     </div>
     <nav :class="isOpen ? 'block' : 'hidden'" class="sm:block">
       <div class="px-2 pt-2 pb-4 sm:flex sm:items-center sm:p-0">
@@ -38,7 +58,9 @@
 </template>
 
 <script>
+import axios from 'axios';
 import AccountDropdown from '@/components/partials/AccountDropdown.vue';
+import { mapMutations } from 'vuex';
 
 export default {
   name: 'Nav',
@@ -59,6 +81,24 @@ export default {
         returnTo: window.location.origin,
       });
     },
+    async loadTimesheet() {
+      axios.defaults.baseURL = 'http://localhost:8082/api/timesheet';
+      const token = await this.$auth.getTokenSilently();
+      axios.defaults.headers.common.Authorization = `Token ${token}`;
+
+      axios.get('/')
+        .then((response) => {
+          this.$store.commit('setTimesheet', response.data.timesheet);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    ...mapMutations([
+      'toggleShowMoreInfo',
+      'nextMonth',
+      'previousMonth',
+    ]),
   },
 };
 </script>

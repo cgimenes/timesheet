@@ -31,33 +31,31 @@
         </tr>
       </tfoot>
     </table>
-    <div v-if="view == 'cards'" class="flex flex-wrap justify-center text-xs">
-      <div class="m-1 w-56" v-for="n in blankDays()" v-bind:key="n"></div>
-      <div v-for="day in month.days" v-bind:key="day.date" class="flex flex-col justify-between m-1 w-56 border border-gray-400 shadow-sm rounded-lg p-3">
+    <div v-if="view == 'cards'" class="flex flex-wrap text-xs max-w-5xl">
+      <div class="m-1 w-32" v-for="n in blankDays()" v-bind:key="n"></div>
+      <div v-for="day in month.days" v-bind:key="day.date" class="flex flex-col justify-between m-1 w-32 border border-gray-400 shadow-sm rounded-lg p-2 text-center">
         <div>
-          <div class="text-center mb-3">
-            <div class="text-gray-600 uppercase">
-              {{day.date | dayOfWeek}}
-            </div>
-            <div :class="day.date === today ? 'text-white bg-indigo-600 rounded-lg' : 'text-gray-800'" class="uppercase font-semibold">
-              {{day.date | dayOfMonth}}
-            </div>
+          <div class="text-gray-600 uppercase">
+            {{day.date | dayOfWeek}}
           </div>
-          <div class="flex flex-wrap justify-center text-gray-800">
+          <div :class="day.date === today ? 'text-white bg-indigo-600 rounded-lg' : 'text-gray-800'" class="uppercase font-semibold">
+            {{day.date | dayOfMonth}}
+          </div>
+          <div v-if="$store.state.showMoreInfo" class="flex flex-wrap justify-center text-gray-800 mt-3">
             <span class="m-1 px-1 border border-gray-400 rounded" v-for="punch in day.punches" v-bind:key="punch">{{punch}}</span>
             <span v-if="!day.punches.length">-</span>
           </div>
         </div>
         <div class="mt-3">
-          <div class="text-gray-600 flex justify-between">
+          <div v-if="$store.state.showMoreInfo" class="text-gray-600">
             <span>Worked: </span>
             <span>{{day.worked | duration}}</span>
           </div>
-          <div class="text-gray-600 flex justify-between">
+          <div v-if="$store.state.showMoreInfo" class="text-gray-600">
             <span>Left: </span>
             <span>{{day.left | duration}}</span>
           </div>
-          <div :class="balanceClass(day.balance)" class="flex justify-between">
+          <div :class="balanceClass(day.balance)">
             <span>Balance: </span>
             <span>{{day.balance | duration}}</span>
           </div>
